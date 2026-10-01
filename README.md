@@ -1,38 +1,71 @@
-# Exchange 2013/2016 to 2019 Migration
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/images/readme-banner-dark.png">
+    <img alt="Exchange 2013/2016 to 2019 Migration: deploys Exchange Server 2019 next to the legacy servers, moves every mailbox in controlled batches and proves the cut-over" src="Docs/images/readme-banner-light.png">
+  </picture>
+</p>
 
-Deploys **Exchange Server 2019** next to an Exchange 2013/2016 organisation, migrates the mailboxes in **controlled batches** and **validates the cut-over** — 26 steps, one PowerShell entry point, readable reports.
-
-![Run report](Docs/images/report-run.png)
+<p align="center">
+  <a href="#how-it-works"><b>How it works</b></a> &nbsp;&middot;&nbsp;
+  <a href="#the-26-steps"><b>The 26 steps</b></a> &nbsp;&middot;&nbsp;
+  <a href="#migration-runbook"><b>Migration runbook</b></a> &nbsp;&middot;&nbsp;
+  <a href="#reports"><b>Reports</b></a> &nbsp;&middot;&nbsp;
+  <a href="#quick-start"><b>Quick start</b></a> &nbsp;&middot;&nbsp;
+  <a href="Docs/Exchange2019Migration-Guide.md"><b>Administrator guide</b></a>
+</p>
 
 ## Why
 
-Moving an organisation from Exchange 2013/2016 to Exchange 2019 means dozens of settings on every new server, a DAG, databases and copies, then weeks of mailbox moves, and finally the proof that no client still uses the old servers. Done by hand, each of these actions is a risk for the servers in production. This framework runs them as **26 numbered steps**, each one able to **read** the current state, **simulate** the change and **apply** it — and never touches the legacy servers by accident.
+Moving an organisation from Exchange 2013/2016 to Exchange 2019 means dozens of settings on every new server, a DAG, databases and copies, then weeks of mailbox moves, and finally the proof that no client still uses the old servers. Done by hand, each of these actions is a risk for the servers in production. This framework runs them as **26 numbered steps**, each one able to **read** the current state, **simulate** the change and **apply** it, and it never touches the legacy servers by accident.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/images/readme-principles-dark.png">
+  <img alt="Design principles: never touch a legacy server by accident, idempotent, resumable, readable" src="Docs/images/readme-principles-light.png">
+</picture>
 
 ## How it works
 
-```
-Configs\  ──►  Deploy-Exchange2019.ps1  ──►  26 steps  ──►  Exchange 2019 servers
-(one file per     (one entry point:          (Inventory,       (2013/2016 never changed,
- environment)      modes, resume, reports)    Simulate, Apply)  except steps 15 and 25)
-                                                    │
-                                                    ▼
-                               Reports\<run>\  CSV + HTML + run log
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/images/readme-how-it-works-dark.png">
+  <img alt="Configs are read by Deploy-Exchange2019.ps1, which runs the selected steps; the steps act on the Exchange organisation in Inventory, Simulate or Apply mode and write the reports" src="Docs/images/readme-how-it-works-light.png">
+</picture>
 
-| Phase | Steps | Content |
-|---|---|---|
-| 1 · Prepare the platform | 01–07 | Product key, certificate, virtual directories, disks, transport queue, log paths, receive connectors |
-| 2 · Build high availability | 08–11 | IP-less DAG, members, mailbox databases, passive and lagged copies |
-| 3 · Configure runtime services | 12–17 | IIS X-Forwarded-For, anti-malware, event logs, Kerberos ASA, MAPI over HTTP, IIS log retention |
-| 4 · Migrate, validate, clean up | 18–26 | System mailboxes, migration batches (plan, start, follow, complete), cleanup, quotas, HealthChecker, Autodiscover SCP, protocol-log analysis |
+Each step is one file, `Steps\StepNN-Name.ps1`, holding one function, `Invoke-Step`. The step discovers its targets, then calls `Invoke-Action` once per **atomic action** (one server, one virtual directory, one database...). `Invoke-Action` decides what to do according to the mode and writes the report row, with the value **before** and **after**.
 
-- **Three modes**: `Inventory` reads, `Simulate` runs the changes with `-WhatIf`, `Apply` changes (typed confirmation).
-- **Idempotent and resumable**: an action already in place is reported `DONE`; `-Resume` runs again only what is not completed.
-- **Exchange 2019 only**: targets are the `Version 15.2*` servers, Edge excluded. Steps 18–26 (migration) never run with `-Step All -Mode Apply`: they are always called explicitly.
-- **Proof of the cut-over**: Step 26 counts the **real-user** IIS and SMTP traffic per Exchange version — monitoring probes (`AMProbe`, HealthMailbox, system mailboxes), anonymous requests and system senders are excluded.
+## The 26 steps
 
-![Console](Docs/images/console-run.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/images/readme-steps-dark.png">
+  <img alt="Phase 1, steps 01 to 07: prepare the platform. Phase 2, steps 08 to 11: build high availability. Phase 3, steps 12 to 17: configure runtime services. Phase 4, steps 18 to 26: migrate, validate and clean up, manual only" src="Docs/images/readme-steps-light.png">
+</picture>
 
+- **Steps 01 to 17** build the Exchange 2019 platform: they can run together, `-Step All`, phase by phase.
+- **Steps 18 to 26** migrate and validate: they are **manual only**. `-Step All -Mode Apply` never runs them; each one is called by number or by name.
+- **Exchange 2019 only**: targets are discovered in Active Directory and filtered on `Version 15.2*`, Edge excluded. Only Steps 15 and 25 touch the legacy servers, and they say so in red.
+
+## Migration runbook
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/images/readme-runbook-dark.png">
+  <img alt="Step 18 system mailboxes, Step 19 batch plan, Step 20 batches created and synced, Step 21 completion, Steps 22 to 24 cleanup, quotas and health, Steps 26, 25 and 26 legacy traffic, SCP and final check; batch lifecycle from Created to Completed" src="Docs/images/readme-runbook-light.png">
+</picture>
+
+**The proof of the cut-over.** Step 26 reads the IIS and SMTP logs of every server and counts the traffic of **real users** per Exchange version. Everything technical is excluded first: monitoring probes (`AMProbe`, `HealthMailbox`, Managed Availability), system and arbitration mailboxes, IIS pool and built-in accounts, anonymous requests, NTLM challenges, load-balancer checks, and SMTP sessions without a real sender (`<>`, postmaster, system mailboxes). **No legacy traffic left** means the old servers can be decommissioned. The rules are in the configuration and in [Annex B of the guide](Docs/Exchange2019Migration-Guide.md#annex-b--protocol-log-filtering-rules).
+
+## Reports
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><a href="Docs/images/console-run.png"><img alt="Console of a run" src="Docs/images/console-run.png"></a><br><sub><b>Console</b> &middot; title card, one line per action with its status, summary card</sub></td>
+    <td width="50%" valign="top"><a href="Docs/images/report-run.png"><img alt="HTML run report" src="Docs/images/report-run.png"></a><br><sub><b>Run report</b> &middot; one row per action, before and after, search and status filters</sub></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><a href="Docs/images/report-migration-status.png"><img alt="Migration status page" src="Docs/images/report-migration-status.png"></a><br><sub><b>Migration status</b> &middot; live follow of the batches and move requests (Steps 20 and 21)</sub></td>
+    <td width="50%" valign="top"><a href="Docs/images/report-protocol-logs.png"><img alt="Protocol-log analysis" src="Docs/images/report-protocol-logs.png"></a><br><sub><b>Protocol-log analysis</b> &middot; real-user IIS and SMTP traffic, legacy versus 2019 (Step 26)</sub></td>
+  </tr>
+</table>
+
+Every run also writes **one CSV per step**, a global CSV, a run log and one transcript per step in `Reports\<run>\`. All the reports are self-contained HTML files, with a light and a dark theme.
 ## Requirements
 
 | Item | Requirement |
