@@ -1574,7 +1574,7 @@ Changelog | Describe the change in `CHANGELOG.md`.
 Version | Raise the version in the manifest, in the `.NOTES` of every file and in the front matter of this guide.
 Tests | `Invoke-Pester -Path .\tests` — all green (the *Versions* tests check that every file agrees).
 Lab | Inventory, then Simulate, of the changed steps.
-Documentation | Update this guide, then `.\tools\Build-Documentation.ps1` to regenerate the HTML. When the console or a report changed, regenerate the screenshots first with `.\tools\New-DocumentationImages.ps1` (synthetic data, no Exchange needed).
+Documentation | Update this guide, then `.\tools\Build-Documentation.ps1` to regenerate the HTML. When the console or a report changed, regenerate the screenshots first with `.\tools\New-DocumentationImages.ps1` (synthetic data, no Exchange needed). After a change of the guide blocks or of the step catalogue, run it again with `-Images Readme` after the build: the README graphics use the CSS of the HTML guide.
 Package | `.\tools\New-MigrationPackage.ps1` — copies the runtime files only, empties the environment values of the configuration, and checks that no lab value remains.
 Release | `git add -A`, `git commit`, `git tag vX.Y.Z`.
 Publish | Publish the anonymized copy to GitHub (contoso values only).
