@@ -1,0 +1,2 @@
+﻿DAGName,DAGIps,WitnessServer,WitnessDir,AltWitnessServer,AltWitnessDir,Site1Servers,Site2Servers,GC,MaximumActiveDatabasesSite1,MaximumPreferredActiveDatabasesSite1,MaximumActiveDatabasesSite2,MaximumPreferredActiveDatabasesSite2,ManualDagnetworkConfiguration,ReplayLagManagerEnabled,ReplicationPort,AutoDatabaseMountDial
+"DAG01","255.255.255.255","DC01.contoso.local","C:\DAG01-FSW","","","EXCH201901,EXCH201902","EXCH201903,EXCH201904","DC02.contoso.local","2","","2","0","False","True","64327","BestAvailability"
