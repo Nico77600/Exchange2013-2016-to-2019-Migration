@@ -1,0 +1,6 @@
+# Runtime output - never commit (server names, mailbox data, transcripts)
+Reports/
+*.log
+*.pfx
+*.p12
+DeploymentState.json
