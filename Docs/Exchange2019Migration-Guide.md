@@ -3,12 +3,14 @@ title: Exchange 2013/2016 to 2019 Migration
 subtitle: Administrator guide
 version: 2.0.0
 author: Nicolas Fabert
-updated: 2026-10-01
+updated: 2026-10-02
 requires: Windows PowerShell 5.1
 scope: Exchange 2019 only, legacy protected
 ---
 
 # Exchange 2013/2016 to 2019 Migration — Administrator guide
+
+> Deploys four Exchange 2019 servers next to an existing Exchange 2013/2016 organisation, moves **every mailbox** to them and proves that the legacy servers can be decommissioned — in **26 resumable steps** that can each **inventory, simulate or apply**.
 
 > [!IMPORTANT]
 > Files downloaded from the Internet may be blocked by Windows and fail to run. Before using this project, unblock every file in the downloaded folder:
@@ -18,10 +20,6 @@ scope: Exchange 2019 only, legacy protected
 > ```
 >
 > Replace the example path with the folder where you downloaded or extracted this project.
->
-> If an `Install-Module` command reports that the module already exists, add `-Force`. If the installed version still conflicts, close PowerShell, run `Uninstall-Module <ModuleName> -AllVersions` if appropriate, then install the required version again.
-
-> Deploys four Exchange 2019 servers next to an existing Exchange 2013/2016 organisation, moves **every mailbox** to them and proves that the legacy servers can be decommissioned — in **26 resumable steps** that can each **inventory, simulate or apply**.
 
 ```cards
 target | What it does | Prepares the Exchange 2019 servers, builds the DAG and its databases, migrates the system and user mailboxes, then checks that no client still uses the legacy servers.
@@ -184,7 +182,7 @@ key | From any PowerShell 5.1 | With WinRM access to an Exchange 2019 server: `-
 
 ```steps
 Copy the folder | Copy the package to the server or the workstation, for example `C:\Scripts\Deploy-Exchange2019`.
-Unblock the files | `Get-ChildItem C:\Scripts\Deploy-Exchange2019 -Recurse | Unblock-File` (files copied from the Internet or a share).
+Unblock the files | `Get-ChildItem C:\Scripts\Deploy-Exchange2019 -Recurse -File -Force | Unblock-File` (files copied from the Internet or a share).
 Edit the configuration | `Configs\Deployment.config.psd1`, `DiskLayout.csv`, `DAGInfo.csv` — the environment values are empty in the package (chapter 6).
 Check | `.\Deploy-Exchange2019.ps1 -Step List`, then `-Step All -Mode Inventory`.
 ```
