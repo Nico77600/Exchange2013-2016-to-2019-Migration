@@ -10,6 +10,17 @@ scope: Exchange 2019 only, legacy protected
 
 # Exchange 2013/2016 to 2019 Migration — Administrator guide
 
+> [!IMPORTANT]
+> Files downloaded from the Internet may be blocked by Windows and fail to run. Before using this project, unblock every file in the downloaded folder:
+>
+> ```powershell
+> Get-ChildItem "C:\Chemin\Du\Dossier" -Recurse -File -Force | Unblock-File
+> ```
+>
+> Replace the example path with the folder where you downloaded or extracted this project.
+>
+> If an `Install-Module` command reports that the module already exists, add `-Force`. If the installed version still conflicts, close PowerShell, run `Uninstall-Module <ModuleName> -AllVersions` if appropriate, then install the required version again.
+
 > Deploys four Exchange 2019 servers next to an existing Exchange 2013/2016 organisation, moves **every mailbox** to them and proves that the legacy servers can be decommissioned — in **26 resumable steps** that can each **inventory, simulate or apply**.
 
 ```cards
