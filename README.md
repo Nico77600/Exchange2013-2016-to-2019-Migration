@@ -11,7 +11,8 @@
   <a href="#migration-runbook"><b>Migration runbook</b></a> &nbsp;&middot;&nbsp;
   <a href="#reports"><b>Reports</b></a> &nbsp;&middot;&nbsp;
   <a href="#quick-start"><b>Quick start</b></a> &nbsp;&middot;&nbsp;
-  <a href="package/Docs/Exchange2019Migration-Guide.md"><b>Administrator guide</b></a>
+  <a href="package/Docs/Exchange2019Migration-UserGuide.md"><b>User guide</b></a> &nbsp;&middot;&nbsp;
+  <a href="package/Docs/Exchange2019Migration-Guide.md"><b>Developer guide</b></a>
 </p>
 
 > [!IMPORTANT]
@@ -100,14 +101,18 @@ notepad .\Configs\DiskLayout.csv ; notepad .\Configs\DAGInfo.csv
 .\Deploy-Exchange2019.ps1 -Step 20 -Follow -FollowInterval 15   # follow the migration batches
 ```
 
-The environment values of the configuration are empty in this repository; `DiskLayout.csv` and `DAGInfo.csv` hold *contoso* examples. The `package` folder holds exactly the files needed to run, with the guide; copying it works too. The zip content built by `.\tools\New-MigrationPackage.ps1` contains the same run-time files with the HTML guide. The `Reports\` folder (run output: server, database and mailbox names) is never committed.
+The environment values of the configuration are empty in this repository; `DiskLayout.csv` and `DAGInfo.csv` hold *contoso* examples. The `Reports\` folder (run output: server, database and mailbox names) is never committed.
 
 ## Documentation
 
-The **administrator guide** covers the background, installation, every configuration key, the 26 steps one by one, the mailbox migration runbook, the reports, the internals, troubleshooting and the protocol-log filtering rules:
+The `package` folder holds exactly the files needed to run, with both guides; the release zip built by `.\tools\New-MigrationPackage.ps1` contains the same run-time files with the HTML guides.
 
-- [package/Docs/Exchange2019Migration-Guide.md](package/Docs/Exchange2019Migration-Guide.md)
-- `package/Docs/Exchange2019Migration-Guide.html` — the same guide as a single HTML file (download it and open it locally)
+| Guide | Content |
+|---|---|
+| **[User guide](package/Docs/Exchange2019Migration-UserGuide.md)** | Prerequisites, one-time setup, the migration runbook step by step with what to check after each, the reports, troubleshooting. |
+| **[Developer guide](package/Docs/Exchange2019Migration-Guide.md)** | Everything else: the background, installation, every configuration key, the 26 steps one by one, the runbook, the reports, the internals, troubleshooting and the protocol-log filtering rules. |
+
+Both guides also exist as a single HTML file with a light and a dark theme (`package/Docs/Exchange2019Migration-UserGuide.html`, `package/Docs/Exchange2019Migration-Guide.html`): download them and open them locally, or use the copies in the release zip.
 
 ## Tests
 

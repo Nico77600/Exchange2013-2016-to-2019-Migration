@@ -36,14 +36,15 @@ notepad .\Configs\DiskLayout.csv ; notepad .\Configs\DAGInfo.csv
 | `Deploy-Exchange2019.ps1` | Entry script and orchestrator. |
 | `Manage-IISLogs.ps1` | Standalone IIS log compression and purge script. |
 | `Configs\` | Configuration, CSV examples and HealthChecker script. |
-| `Docs\` | Markdown and single-file HTML guide, with images. |
+| `Docs\` | User and developer guides, Markdown and single-file HTML, with images. |
 | `Modules\` | Runtime module and manifest. |
 | `Steps\` | The 26 migration step scripts. |
 | `LICENSE` | MIT licence. |
 | `README.md` | This short package readme. |
 
 ## Documentation
-- [Guide](Docs/Exchange2019Migration-Guide.md) - also `Docs/Exchange2019Migration-Guide.html`, a single file to open locally
+- [User guide](Docs/Exchange2019Migration-UserGuide.md) - also `Docs/Exchange2019Migration-UserGuide.html`, a single file to open locally
+- [Developer guide](Docs/Exchange2019Migration-Guide.md) - also `Docs/Exchange2019Migration-Guide.html`
 
 Project page, releases and change log: https://github.com/Nico77600/Exchange2013-2016-to-2019-Migration
 
