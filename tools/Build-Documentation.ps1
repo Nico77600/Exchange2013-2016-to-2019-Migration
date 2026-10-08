@@ -1,7 +1,7 @@
 ﻿#Requires -Version 7.4
 <#
 .SYNOPSIS
-    Builds Docs\Exchange2019Migration-Guide.html from Docs\Exchange2019Migration-Guide.md.
+    Builds package\Docs\Exchange2019Migration-Guide.html from package\Docs\Exchange2019Migration-Guide.md.
 
 .DESCRIPTION
     The Markdown guide stays readable as plain text (and on GitHub / Azure DevOps). This script
@@ -35,8 +35,8 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Source = (Join-Path $PSScriptRoot '..\Docs\Exchange2019Migration-Guide.md'),
-    [string]$Destination = (Join-Path $PSScriptRoot '..\Docs\Exchange2019Migration-Guide.html')
+    [string]$Source = (Join-Path $PSScriptRoot '..\package\Docs\Exchange2019Migration-Guide.md'),
+    [string]$Destination = (Join-Path $PSScriptRoot '..\package\Docs\Exchange2019Migration-Guide.html')
 )
 $ErrorActionPreference = 'Stop'
 $Source = (Resolve-Path $Source).Path

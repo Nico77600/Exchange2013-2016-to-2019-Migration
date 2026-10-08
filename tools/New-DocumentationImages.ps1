@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Regenerates the screenshots of the guide (Docs\images\*.png) from synthetic data.
+    Regenerates the screenshots of the guide (package\Docs\images\*.png) from synthetic data.
 
 .DESCRIPTION
     No Exchange server is needed. The tool:
@@ -23,7 +23,7 @@
     README images: readme-<name>-light.png and readme-<name>-dark.png.
 
 .PARAMETER OutputFolder
-    Default: Docs\images next to the tools folder.
+    Default: package\Docs\images next to the tools folder.
 
 .PARAMETER Images
     All (default), Guide (screenshots of the guide only) or Readme (README graphics only).
@@ -57,12 +57,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+$packageRoot = Join-Path $root 'package'
 
 #region Part 1 - sample reports (Windows PowerShell 5.1) --------------------------------------------
 function Invoke-SampleReports {
     param([string]$Root, [string]$Out)
     New-Item -ItemType Directory -Path $Out -Force | Out-Null
-    Import-Module (Join-Path $Root 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
+    Import-Module (Join-Path (Join-Path $Root 'package') 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
     $mod = Get-Module Exchange2019.Common
     # ---- Run report ----------------------------------------------------------------------------------
     & $mod { $Script:Mode = 'Apply'; $Script:OutputFolder = 'D:\Tools\Deploy-Exchange2019\Reports\20261001_101500'; $Script:TimestampRun = '20261001_101500'; $Script:RunStart = [datetime]'2026-10-01 10:15:00'; $Script:DefaultExchangeServer = 'EXCH201901'; Enable-ExConsoleCapture -Quiet }
@@ -80,7 +81,7 @@ function Invoke-SampleReports {
     New-HtmlReport -Path (Join-Path $Out 'Report_GLOBAL_Apply.html')
 
     # ---- Protocol-log analysis (Step 26) -------------------------------------------------------------
-    . (Join-Path $Root 'Steps\Step26-AnalyzeProtocolLogs.ps1')
+    . (Join-Path (Join-Path $Root 'package') 'Steps\Step26-AnalyzeProtocolLogs.ps1')
     $sv = [ordered]@{ EXCH201601 = '2016'; EXCH201602 = '2016'; EXCH201901 = '2019'; EXCH201902 = '2019'; EXCH201903 = '2019'; EXCH201904 = '2019' }
     $vd = @('Mapi', 'OWA', 'EWS', 'OAB', 'ECP', 'RPC', 'Autodiscover', 'Microsoft-Server-ActiveSync', 'PowerShell', '<Other>')
     $iis = foreach ($n in $sv.Keys) {
@@ -115,7 +116,7 @@ function Invoke-SampleReports {
     function global:Get-ExchangeServer { param($Identity) [pscustomobject]@{ AdminDisplayVersion = $(if ($Identity -like 'EXCH2016*') { 'Version 15.1 (Build 2507.6)' } else { 'Version 15.2 (Build 1544.4)' }) } }
     function global:Get-MoveRequest { param($Identity) if ($Identity -like '*Audit*') { [pscustomobject]@{ Status = 'InProgress' } } }
 
-    Import-NestedFunction (Join-Path $Root 'Steps\Step18-SystemMailboxMigration.ps1') 'New-SystemMailboxPlanHtml'
+    Import-NestedFunction (Join-Path (Join-Path $Root 'package') 'Steps\Step18-SystemMailboxMigration.ps1') 'New-SystemMailboxPlanHtml'
     $sys = @()
     $i = 0
     foreach ($t in 'ArbitrationMailbox', 'ArbitrationMailbox', 'ArbitrationMailbox', 'ArbitrationMailbox', 'ArbitrationMailbox', 'AuditLogMailbox', 'AuxAuditLogMailbox', 'DiscoveryMailbox') {
@@ -125,7 +126,7 @@ function Invoke-SampleReports {
     }
     New-SystemMailboxPlanHtml -Mailboxes $sys -TargetDbCount 4 -OutputPath (Join-Path $Out 'SystemMailboxPlan.html') -ReportMode 'Simulate'
 
-    Import-NestedFunction (Join-Path $Root 'Steps\Step19-PrepareMigration.ps1') 'New-MigrationPlanHtml'
+    Import-NestedFunction (Join-Path (Join-Path $Root 'package') 'Steps\Step19-PrepareMigration.ps1') 'New-MigrationPlanHtml'
     $names = 'Adele Vance', 'Alex Wilber', 'Diego Siciliani', 'Grady Archie', 'Henrietta Mueller', 'Isaiah Langer', 'Johanna Lorenz', 'Joni Sherman', 'Lee Gu', 'Lidia Holloway', 'Lynne Robbins', 'Megan Bowen', 'Miriam Graham', 'Nestor Wilke', 'Patti Fernandez', 'Pradeep Gupta', 'Accounting', 'Room A', 'Projector'
     $data = New-Object System.Collections.Generic.List[object]; $batches = @{}
     for ($k = 0; $k -lt $names.Count; $k++) {
@@ -139,7 +140,7 @@ function Invoke-SampleReports {
     foreach ($bn in 1..4) { $items = @($data | Where-Object Batch -eq $bn); $batches[$bn] = [pscustomobject]@{ Number = $bn; SizeMB = ($items | Measure-Object SizeMB -Sum).Sum; Count = @($items | Where-Object Type -eq 'Primary').Count } }
     New-MigrationPlanHtml -Data $data -Batches $batches -OutputPath (Join-Path $Out 'MigrationPlan.html') -ReportMode 'Apply' -BatchCount 4
 
-    Import-NestedFunction (Join-Path $Root 'Steps\Step20-RunMigration.ps1') 'New-MigrationStatusHtml'
+    Import-NestedFunction (Join-Path (Join-Path $Root 'package') 'Steps\Step20-RunMigration.ps1') 'New-MigrationStatusHtml'
     $stats = foreach ($bn in 1..4) {
         $users = foreach ($d in ($data | Where-Object { $_.Batch -eq $bn -and $_.Type -eq 'Primary' })) {
             $st = switch ($bn) { 1 { 'Completed' } 2 { 'Synced' } 3 { if ($d.DisplayName -like 'L*') { 'Failed' } else { 'Syncing' } } default { 'Provisioning' } }
@@ -153,7 +154,7 @@ function Invoke-SampleReports {
     }
     New-MigrationStatusHtml -Stats $stats -OutputPath (Join-Path $Out 'MigrationStatus.html') -ReportMode 'Inventory' -Title 'Migration status' -AutoRefreshSeconds 900
 
-    . (Join-Path $Root 'Steps\Step24-HealthCheckerReport.ps1')
+    . (Join-Path (Join-Path $Root 'package') 'Steps\Step24-HealthCheckerReport.ps1')
     $issues = @{
         EXCH201901 = @([pscustomobject]@{ Severity = 'Warning'; CategoryName = 'Operating System Information'; CategoryOrder = 2; Name = 'Visual C++ 2012 x64'; DisplayValue = 'Redistributable is outdated' }
                        [pscustomobject]@{ Severity = 'Error'; CategoryName = 'Security Settings'; CategoryOrder = 5; Name = 'TLS 1.2 - SystemDefaultTlsVersions'; DisplayValue = 'Error: SystemDefaultTlsVersions is not set to the recommended value' })
@@ -168,7 +169,7 @@ function Invoke-SampleReports {
 #region Part 2 - demonstration run for the console screenshot (Windows PowerShell 5.1) -----------------
 function Invoke-ConsoleRun {
     param([string]$Root, [string]$Out)
-    Import-Module (Join-Path $Root 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
+    Import-Module (Join-Path (Join-Path $Root 'package') 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
     $mod = Get-Module Exchange2019.Common
     $tool = Get-ExToolInfo
     New-Item -ItemType Directory -Path $Out -Force | Out-Null
@@ -241,9 +242,9 @@ function ConvertTo-ReadmeInline([string]$Text) {
 function Get-ReadmeAssets {
     param([string]$Root)
     $builder = Join-Path $Root 'tools\Build-Documentation.ps1'
-    $guideHtml = Join-Path $Root 'Docs\Exchange2019Migration-Guide.html'
-    $guideMd = Join-Path $Root 'Docs\Exchange2019Migration-Guide.md'
-    if (-not (Test-Path $guideHtml)) { throw 'Docs\Exchange2019Migration-Guide.html not found: run tools\Build-Documentation.ps1 first (it holds the CSS of the graphics).' }
+    $guideHtml = Join-Path (Join-Path $Root 'package') 'Docs\Exchange2019Migration-Guide.html'
+    $guideMd = Join-Path (Join-Path $Root 'package') 'Docs\Exchange2019Migration-Guide.md'
+    if (-not (Test-Path $guideHtml)) { throw 'package\Docs\Exchange2019Migration-Guide.html not found: run tools\Build-Documentation.ps1 first (it holds the CSS of the graphics).' }
     # Icons: the $Icons table of the documentation builder, read without running the builder.
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($builder, [ref]$null, [ref]$null)
     $assign = $ast.Find({ param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and $n.Left.Extent.Text -eq '$Icons' }, $true)
@@ -382,7 +383,7 @@ function Invoke-ReadmeGraphics {
 
     # Banner: the hero of the guide, with the key figures of the catalogue.
     $catalog = & {
-        Import-Module (Join-Path $Root 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
+        Import-Module (Join-Path (Join-Path $Root 'package') 'Modules\Exchange2019.Common.psd1') -Force -DisableNameChecking
         Get-DeploymentStepCatalog
     }
     $steps = @($catalog.Keys)
@@ -445,7 +446,7 @@ if ($Part -eq 'Samples') { Invoke-SampleReports -Root $root -Out $Work; return }
 if ($Part -eq 'ConsoleRun') { Invoke-ConsoleRun -Root $root -Out $Work; return }
 
 #region Main ---------------------------------------------------------------------------------------
-if (-not $OutputFolder) { $OutputFolder = Join-Path $root 'Docs\images' }
+if (-not $OutputFolder) { $OutputFolder = Join-Path $packageRoot 'Docs\images' }
 $edge = @("${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $edge) { throw 'Microsoft Edge not found: it takes the screenshots (headless mode).' }
 $work = Join-Path ([IO.Path]::GetTempPath()) ('exm-doc-' + [guid]::NewGuid().ToString('N').Substring(0, 8))

@@ -14,14 +14,15 @@
 
 BeforeAll {
     $script:Root = Split-Path $PSScriptRoot -Parent
-    $script:Manifest = Join-Path $script:Root 'Modules\Exchange2019.Common.psd1'
+    $script:PackageRoot = Join-Path $script:Root 'package'
+    $script:Manifest = Join-Path $script:PackageRoot 'Modules\Exchange2019.Common.psd1'
     Import-Module $script:Manifest -Force -DisableNameChecking
     $script:Module = Get-Module Exchange2019.Common
     $script:Version = (Import-PowerShellDataFile $script:Manifest).ModuleVersion
     $script:Ps51 = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $script:Code = @(Get-ChildItem $script:Root -Recurse -File -Include '*.ps1', '*.psm1', '*.psd1' |
         Where-Object { $_.FullName -notmatch '\\(Reports|\.git)\\' -and $_.Name -ne 'HealthChecker.ps1' })
-    $script:Config = Import-PowerShellDataFile (Join-Path $script:Root 'Configs\Deployment.config.psd1')
+    $script:Config = Import-PowerShellDataFile (Join-Path $script:PackageRoot 'Configs\Deployment.config.psd1')
 
     function Get-FunctionFromFile([string]$File, [string]$Name) {
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($File, [ref]$null, [ref]$null)
@@ -45,7 +46,7 @@ Describe 'Files' {
         $nonAscii | Should -BeNullOrEmpty
     }
     It 'contain no French left in the steps and the entry script' {
-        $files = @(Get-ChildItem (Join-Path $script:Root 'Steps') -Filter *.ps1) + (Get-Item (Join-Path $script:Root 'Deploy-Exchange2019.ps1'))
+        $files = @(Get-ChildItem (Join-Path $script:PackageRoot 'Steps') -Filter *.ps1) + (Get-Item (Join-Path $script:PackageRoot 'Deploy-Exchange2019.ps1'))
         $hits = $files | Select-String -Pattern '\b(serveur|etape|aucun|fichier|deja|rapport|boite|sauvegarde|lancer|verifier)\b' -CaseSensitive:$false
         @($hits | ForEach-Object { "$($_.Filename):$($_.LineNumber)" }) | Should -BeNullOrEmpty
     }
@@ -61,11 +62,11 @@ Describe 'Step catalogue' {
         foreach ($k in $script:Catalog.Keys) {
             $e = $script:Catalog[$k]
             $e.File | Should -Be ('Step{0:D2}-{1}.ps1' -f [int]$k, $e.Name)
-            $path = Join-Path $script:Root "Steps\$($e.File)"
+            $path = Join-Path $script:PackageRoot "Steps\$($e.File)"
             Test-Path $path | Should -BeTrue
             Get-FunctionFromFile $path 'Invoke-Step' | Should -Not -BeNullOrEmpty
         }
-        @(Get-ChildItem (Join-Path $script:Root 'Steps') -Filter 'Step*.ps1').Count | Should -Be 26
+        @(Get-ChildItem (Join-Path $script:PackageRoot 'Steps') -Filter 'Step*.ps1').Count | Should -Be 26
     }
     It 'marks steps 18 to 26 ManualOnly, and only them' {
         $manual = @($script:Catalog.Keys | Where-Object { $script:Catalog[$_].ManualOnly })
@@ -81,7 +82,7 @@ Describe 'Step catalogue' {
 
 Describe 'Configuration' {
     It 'has every top-level key that the steps read' {
-        $used = Get-ChildItem (Join-Path $script:Root 'Steps') -Filter *.ps1 | Select-String -Pattern '\$Config\.([A-Za-z0-9]+)' -AllMatches |
+        $used = Get-ChildItem (Join-Path $script:PackageRoot 'Steps') -Filter *.ps1 | Select-String -Pattern '\$Config\.([A-Za-z0-9]+)' -AllMatches |
             ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
         $missing = @($used | Where-Object { -not $script:Config.ContainsKey($_) })
         $missing | Should -BeNullOrEmpty
@@ -99,7 +100,7 @@ Describe 'Configuration' {
 
 Describe 'Protocol-log filter (Step 26)' {
     BeforeAll {
-        $fn = Get-FunctionFromFile (Join-Path $script:Root 'Steps\Step26-AnalyzeProtocolLogs.ps1') 'Test-ProtocolLogExcludedIdentity'
+        $fn = Get-FunctionFromFile (Join-Path $script:PackageRoot 'Steps\Step26-AnalyzeProtocolLogs.ps1') 'Test-ProtocolLogExcludedIdentity'
         . ([scriptblock]::Create($fn.Extent.Text))
         $script:IisPatterns = @($script:Config.LogAnalysis.IISExcludeUserPatterns)
         $script:SmtpPatterns = @($script:Config.LogAnalysis.SmtpExcludeSenderPatterns)
@@ -175,7 +176,7 @@ Describe 'Reports' {
         & $script:Module { $Script:Capture = $null; $Script:GlobalReportEntries.Clear(); Reset-Report }
     }
     It 'builds every HTML report of the steps with the shared theme' {
-        $generators = Get-ChildItem (Join-Path $script:Root 'Steps') -Filter *.ps1 | Where-Object { (Get-Content $_.FullName -Raw) -match '</html>|Get-ExHtmlFooter' }
+        $generators = Get-ChildItem (Join-Path $script:PackageRoot 'Steps') -Filter *.ps1 | Where-Object { (Get-Content $_.FullName -Raw) -match '</html>|Get-ExHtmlFooter' }
         @($generators).Count | Should -Be 5
         foreach ($g in $generators) {
             $text = Get-Content $g.FullName -Raw
@@ -188,7 +189,7 @@ Describe 'Reports' {
 
 Describe 'Entry script' {
     BeforeAll {
-        $script:Entry = Join-Path $script:Root 'Deploy-Exchange2019.ps1'
+        $script:Entry = Join-Path $script:PackageRoot 'Deploy-Exchange2019.ps1'
         function Invoke-Entry([string]$Arguments) {
             $out = & $script:Ps51 -NoProfile -Command "& '$script:Entry' $Arguments -OutputFolder '$TestDrive\Reports'; exit `$LASTEXITCODE" 2>&1 | Out-String
             [pscustomobject]@{ Output = $out; Code = $LASTEXITCODE }
@@ -210,15 +211,15 @@ Describe 'Entry script' {
 Describe 'Versions' {
     It 'is the same in the manifest, the module, the entry script, the steps, the tools, the changelog and the guide' {
         & $script:Module { $Script:ToolVersion } | Should -Be $script:Version
-        $files = @(Get-ChildItem (Join-Path $script:Root 'Steps') -Filter *.ps1) + @(Get-ChildItem (Join-Path $script:Root 'tools') -Filter *.ps1) +
-            @(Get-Item (Join-Path $script:Root 'Deploy-Exchange2019.ps1'), (Join-Path $script:Root 'Manage-IISLogs.ps1'), (Join-Path $script:Root 'Modules\Exchange2019.Common.psm1'), (Join-Path $script:Root 'Configs\Deployment.config.psd1'), $PSCommandPath)
+        $files = @(Get-ChildItem (Join-Path $script:PackageRoot 'Steps') -Filter *.ps1) + @(Get-ChildItem (Join-Path $script:Root 'tools') -Filter *.ps1) +
+            @(Get-Item (Join-Path $script:PackageRoot 'Deploy-Exchange2019.ps1'), (Join-Path $script:PackageRoot 'Manage-IISLogs.ps1'), (Join-Path $script:PackageRoot 'Modules\Exchange2019.Common.psm1'), (Join-Path $script:PackageRoot 'Configs\Deployment.config.psd1'), $PSCommandPath)
         $wrong = foreach ($f in $files) {
             $m = [regex]::Match([IO.File]::ReadAllText($f.FullName), '(?m)^\s*#?\s*Version\s*:\s*(\S+)')
             if (-not $m.Success -or $m.Groups[1].Value -ne $script:Version) { "$($f.Name)=$($m.Groups[1].Value)" }
         }
         $wrong | Should -BeNullOrEmpty
         [regex]::Match([IO.File]::ReadAllText((Join-Path $script:Root 'CHANGELOG.md')), '## \[(\d+\.\d+(\.\d+)?)\]').Groups[1].Value | Should -Be $script:Version
-        [regex]::Match([IO.File]::ReadAllText((Join-Path $script:Root 'Docs\Exchange2019Migration-Guide.md')), '(?m)^version:\s*(\S+)').Groups[1].Value | Should -Be $script:Version
+        [regex]::Match([IO.File]::ReadAllText((Join-Path $script:PackageRoot 'Docs\Exchange2019Migration-Guide.md')), '(?m)^version:\s*(\S+)').Groups[1].Value | Should -Be $script:Version
     }
 }
 

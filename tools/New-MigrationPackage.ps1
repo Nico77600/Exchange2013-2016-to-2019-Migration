@@ -43,7 +43,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-$version = (Import-PowerShellDataFile (Join-Path $root 'Modules\Exchange2019.Common.psd1')).ModuleVersion
+$packageRoot = Join-Path $root 'package'
+$version = (Import-PowerShellDataFile (Join-Path $packageRoot 'Modules\Exchange2019.Common.psd1')).ModuleVersion
 if (-not $Destination) { $Destination = Join-Path (Split-Path $root -Parent) "package\Deploy-Exchange2019-$version" }
 $Destination = [IO.Path]::GetFullPath($Destination).TrimEnd('\')
 
@@ -62,10 +63,11 @@ if (Test-Path -LiteralPath $Destination) {
 $files = New-Object System.Collections.Generic.List[string]
 foreach ($f in 'Deploy-Exchange2019.ps1', 'Manage-IISLogs.ps1', 'CHANGELOG.md', 'LICENSE', 'Configs\HealthChecker.ps1', 'Docs\Exchange2019Migration-Guide.html') { $files.Add($f) }
 foreach ($folder in 'Modules', 'Steps') {
-    Get-ChildItem -LiteralPath (Join-Path $root $folder) -File | ForEach-Object { $files.Add($_.FullName.Substring($rootPrefix.Length)) }
+    Get-ChildItem -LiteralPath (Join-Path $packageRoot $folder) -File | ForEach-Object { $files.Add($_.FullName.Substring(([IO.Path]::GetFullPath($packageRoot).TrimEnd('\') + '\').Length)) }
 }
 foreach ($f in $files) {
-    $source = Join-Path $root $f
+    $sourceRoot = if ($f -eq 'CHANGELOG.md') { $root } else { $packageRoot }
+    $source = Join-Path $sourceRoot $f
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing file in the tool folder: $f" }
     $target = Join-Path $Destination $f
     [void][IO.Directory]::CreateDirectory((Split-Path $target -Parent))
@@ -87,7 +89,7 @@ function Add-Forbidden([string]$Value) {
 
 $utf8Bom = New-Object Text.UTF8Encoding($true)
 $configRelative = 'Configs\Deployment.config.psd1'
-$config = [IO.File]::ReadAllText((Join-Path $root $configRelative))
+$config = [IO.File]::ReadAllText((Join-Path $packageRoot $configRelative))
 $scalarKeys = 'UrlExterne', 'UrlInterne', 'DomainNetBios', 'LicenseKey', 'SourceServer2013ForConnectors', 'SourceServer2016ForConnectors', 'SourceServerForVDirs', 'AccountName', 'Domain', 'OUPath'
 $emptied = 0
 foreach ($key in $scalarKeys) {
@@ -115,7 +117,7 @@ $generic = 'local', 'contoso', 'Queue', 'Databases', 'Swap', 'True', 'False', 'B
     'MaximumActiveDatabasesSite2', 'MaximumPreferredActiveDatabasesSite2', 'ManualDagnetworkConfiguration', 'ReplayLagManagerEnabled',
     'ReplicationPort', 'AutoDatabaseMountDial'
 foreach ($csv in 'DiskLayout.csv', 'DAGInfo.csv') {
-    $source = Join-Path $root "Configs\$csv"
+    $source = Join-Path $packageRoot "Configs\$csv"
     if (-not (Test-Path -LiteralPath $source)) { continue }
     foreach ($token in [regex]::Matches([IO.File]::ReadAllText($source), '[A-Za-z][A-Za-z0-9_-]{3,}')) {
         if ($token.Value -notin $generic -and $token.Value -notmatch '^(EXCH2019\d\d|DAG01|DC0\d|FSW)$') { [void]$forbidden.Add($token.Value) }

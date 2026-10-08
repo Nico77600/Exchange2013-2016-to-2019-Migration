@@ -1354,7 +1354,7 @@ function Invoke-Step {
 | Change the console output | Always go through `Write-ExStep`, `Write-ExItem`, `Write-ExSummary` and `Write-Log`: they also write the log file. Icon sets: `Get-ExIconSet` |
 | Change the look of the HTML reports | The shared theme functions `Get-ExHtmlHead`, `Get-ExHtmlHero`, `Get-ExHtmlTile`, `Get-ExHtmlFooter`, `Get-ExStatusColor` — every report follows |
 | Add a protocol-log exclusion | `LogAnalysis` in the configuration — Annex B |
-| Change this guide | Edit `Docs\Exchange2019Migration-Guide.md` (callouts `> [!NOTE]`, blocks `cards`, `steps`, `flow`), then run `.\tools\Build-Documentation.ps1` |
+| Change this guide | Edit `package\Docs\Exchange2019Migration-Guide.md` (callouts `> [!NOTE]`, blocks `cards`, `steps`, `flow`), then run `.\tools\Build-Documentation.ps1` |
 
 ### PowerShell 5.1 and Exchange pitfalls met during the build
 
