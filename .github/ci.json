@@ -1,0 +1,10 @@
+{
+  "runtimeRoot": "package",
+  "testMode": "pester",
+  "testEntry": null,
+  "tests": [
+    "tests/Exchange2019Migration.Tests.ps1"
+  ],
+  "packageBuilder": "tools/New-MigrationPackage.ps1",
+  "packageEntry": "Deploy-Exchange2019.ps1"
+}
