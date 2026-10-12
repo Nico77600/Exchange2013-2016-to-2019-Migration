@@ -8,7 +8,7 @@
     The package contains only what Deploy-Exchange2019.ps1 needs at run time, plus the HTML guides:
         Deploy-Exchange2019.ps1, Manage-IISLogs.ps1, Modules\, Steps\, Configs\,
         Docs\Exchange2019Migration-UserGuide.html, Docs\Exchange2019Migration-Guide.html,
-        CHANGELOG.md, LICENSE
+        README.md, CHANGELOG.md, LICENSE
     It never copies Reports\ (run output: server, database and mailbox names), tools\ or tests\.
 
     Environment values:
@@ -62,7 +62,7 @@ if (Test-Path -LiteralPath $Destination) {
 
 # ---- Files needed at run time ---------------------------------------------------------------------
 $files = New-Object System.Collections.Generic.List[string]
-foreach ($f in 'Deploy-Exchange2019.ps1', 'Manage-IISLogs.ps1', 'CHANGELOG.md', 'LICENSE', 'Configs\HealthChecker.ps1', 'Docs\Exchange2019Migration-UserGuide.html', 'Docs\Exchange2019Migration-Guide.html') { $files.Add($f) }
+foreach ($f in 'Deploy-Exchange2019.ps1', 'Manage-IISLogs.ps1', 'README.md', 'CHANGELOG.md', 'LICENSE', 'Configs\HealthChecker.ps1', 'Docs\Exchange2019Migration-UserGuide.html', 'Docs\Exchange2019Migration-Guide.html') { $files.Add($f) }
 foreach ($folder in 'Modules', 'Steps') {
     Get-ChildItem -LiteralPath (Join-Path $packageRoot $folder) -File | ForEach-Object { $files.Add($_.FullName.Substring(([IO.Path]::GetFullPath($packageRoot).TrimEnd('\') + '\').Length)) }
 }
