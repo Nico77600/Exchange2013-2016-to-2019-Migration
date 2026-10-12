@@ -30,6 +30,44 @@ BeforeAll {
     }
 }
 
+Describe 'Runtime disclaimer' {
+    BeforeAll {
+        $script:DisclaimerRepo = Split-Path $PSScriptRoot -Parent
+        $script:DisclaimerConfig = Get-Content (Join-Path $script:DisclaimerRepo '.github\ci.json') -Raw | ConvertFrom-Json
+        $script:DisclaimerRuntime = Join-Path $script:DisclaimerRepo $script:DisclaimerConfig.runtimeRoot
+        $script:DisclaimerPattern = '(?ms)^## Disclaimer[ \t]*\r?\n(?<Body>.*?)(?=^##[ \t]|\z)'
+        $rootReadme = [IO.File]::ReadAllText((Join-Path $script:DisclaimerRepo 'README.md'))
+        $matches = [regex]::Matches($rootReadme, $script:DisclaimerPattern)
+        if ($matches.Count -ne 1) { throw 'The root README must contain exactly one canonical disclaimer.' }
+        $script:CanonicalDisclaimer = $matches[0].Groups['Body'].Value.Trim().Replace("`r`n", "`n")
+        function ConvertTo-DisclaimerParagraphs([string]$Text) {
+            (($Text.Trim() -split '\r?\n[ \t]*\r?\n') | ForEach-Object { ($_ -replace '\s+', ' ').Trim() }) -join "`n`n"
+        }
+    }
+
+    It 'keeps the runtime README disclaimer identical to the canonical root section' {
+        $readme = [IO.File]::ReadAllText((Join-Path $script:DisclaimerRuntime 'README.md'))
+        $matches = [regex]::Matches($readme, $script:DisclaimerPattern)
+        $matches.Count | Should -Be 1
+        $matches[0].Groups['Body'].Value.Trim().Replace("`r`n", "`n") | Should -BeExactly $script:CanonicalDisclaimer
+    }
+
+    It 'keeps both delivered public entry script disclaimers attached to their help with the same wording and paragraphs' {
+        foreach ($entry in $script:DisclaimerConfig.packageEntry, 'Manage-IISLogs.ps1') {
+            $path = Join-Path $script:DisclaimerRuntime $entry
+            $errors = $null
+            $ast = [Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$errors)
+            @($errors).Count | Should -Be 0 -Because $entry
+            $help = $ast.GetHelpContent()
+            $help | Should -Not -BeNullOrEmpty -Because $entry
+            $notes = $help.Notes
+            [regex]::Matches($notes, '(?m)^[ \t]*Disclaimer:[ \t]*$').Count | Should -Be 1 -Because $entry
+            $body = [regex]::Match($notes, '(?s)(?:^|\r?\n)[ \t]*Disclaimer:[ \t]*\r?\n(?<Body>.*)\z').Groups['Body'].Value
+            (ConvertTo-DisclaimerParagraphs $body) | Should -BeExactly (ConvertTo-DisclaimerParagraphs $script:CanonicalDisclaimer) -Because $entry
+        }
+    }
+}
+
 Describe 'Files' {
     It 'parse in Windows PowerShell 5.1, the shell of the framework' {
         $list = Join-Path $TestDrive 'files.txt'
@@ -230,6 +268,10 @@ Describe 'Package' {
         $LASTEXITCODE | Should -Be 0
         Test-Path (Join-Path $destination 'Deploy-Exchange2019.ps1') | Should -BeTrue
         Test-Path (Join-Path $destination 'Docs\Exchange2019Migration-Guide.html') | Should -BeTrue
+        $readme = Join-Path $destination 'README.md'
+        Test-Path $readme | Should -BeTrue
+        (Get-FileHash -LiteralPath $readme -Algorithm SHA256).Hash |
+            Should -BeExactly (Get-FileHash -LiteralPath (Join-Path $script:PackageRoot 'README.md') -Algorithm SHA256).Hash
         foreach ($name in 'Reports', 'tools', 'tests') { Test-Path (Join-Path $destination $name) | Should -BeFalse }
         $config = Import-PowerShellDataFile (Join-Path $destination 'Configs\Deployment.config.psd1')
         $config.LicenseKey | Should -BeNullOrEmpty

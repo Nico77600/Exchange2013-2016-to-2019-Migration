@@ -150,6 +150,12 @@
                     14 = -FollowAfter without step 21
     Console       : EXM_ICONS = Emoji | Symbols | Ascii forces the icon style; NO_COLOR removes the colours.
     Documentation : Docs\Exchange2019Migration-Guide.html (or .md). History: CHANGELOG.md
+
+    Disclaimer:
+    This Script is a Personal project.
+    It's provided "AS-IS". It's not an official Microsoft product so no support can be expected from Microsoft.
+
+    As any scripts you must read carefully the documentation and test it first in a Test environment before any run in Production.
 #>
 
 [CmdletBinding(DefaultParameterSetName='Standard')]

@@ -49,3 +49,10 @@ notepad .\Configs\DiskLayout.csv ; notepad .\Configs\DAGInfo.csv
 Project page, releases and change log: https://github.com/Nico77600/Exchange2013-2016-to-2019-Migration
 
 License: [MIT](LICENSE).
+
+## Disclaimer
+
+This Script is a Personal project.
+It's provided "AS-IS". It's not an official Microsoft product so no support can be expected from Microsoft.
+
+As any scripts you must read carefully the documentation and test it first in a Test environment before any run in Production.
